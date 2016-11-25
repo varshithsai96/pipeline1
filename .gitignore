@@ -10,6 +10,7 @@
 .maven-to-test-dependents
 .project
 .settings
+.versionless-pom.xml
 /*.deb
 /*.rpm
 /*.zip

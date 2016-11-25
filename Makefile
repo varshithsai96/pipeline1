@@ -1,11 +1,18 @@
-POMS := $(shell find * -name pom.xml ! -path '*/target/*')
-MAVEN_MODULES := $(patsubst %/pom.xml,%,$(filter-out pom.xml assembly/pom.xml,$(POMS)))
+ifdef VERSIONLESS
+POM_XML := .versionless-pom.xml
+else
+POM_XML := pom.xml
+endif
+
+POMS := $(patsubst %pom.xml,%$(POM_XML),$(shell find * -name pom.xml ! -path '*/target/*'))
+MAVEN_MODULES := $(patsubst %/$(POM_XML),%,$(filter-out $(POM_XML) assembly/$(POM_XML),$(POMS)))
 GRADLE_FILES := $(shell find * -name build.gradle -o -name settings.gradle -o -name gradle.properties)
 
 MVN_WORKSPACE := $(CURDIR)/.maven-workspace
 MVN_CACHE := $(CURDIR)/.maven-cache
 
-MVN := mvn --settings "$(CURDIR)/settings.xml" -Dworkspace="$(MVN_WORKSPACE)" -Dcache="$(MVN_CACHE)" \
+MVN := mvn -f $(POM_XML) \
+           --settings "$(CURDIR)/settings.xml" -Dworkspace="$(MVN_WORKSPACE)" -Dcache="$(MVN_CACHE)" \
            -Dorg.ops4j.pax.url.mvn.localRepository="$(MVN_WORKSPACE)"
 GRADLE := M2_HOME=$(CURDIR)/.gradle-settings libs/dotify/dotify.api/gradlew -Dworkspace="$(MVN_WORKSPACE)" -Dcache="$(MVN_CACHE)"
 
@@ -179,14 +186,14 @@ $(addsuffix /.maven-dependencies-to-test-dependents,assembly $(MAVEN_MODULES)) :
 $(addsuffix /.maven-dependencies-to-install,assembly $(MAVEN_MODULES)) : %/.maven-dependencies-to-install : %/.maven-snapshot-dependencies
 	echo "Looking for changes..." >&2
 	for module in $$(cat $<); do \
-		v=$$(xmllint --xpath "/*/*[local-name()='version']/text()" $$module/pom.xml) && \
-		g=$$(xmllint --xpath "/*/*[local-name()='groupId']/text()" $$module/pom.xml 2>/dev/null) || \
-		g=$$(xmllint --xpath "/*/*[local-name()='parent']/*[local-name()='groupId']/text()" $$module/pom.xml) && \
-		a=$$(xmllint --xpath "/*/*[local-name()='artifactId']/text()" $$module/pom.xml) && \
+		v=$$(xmllint --xpath "/*/*[local-name()='version']/text()" $$module/$(POM_XML)) && \
+		g=$$(xmllint --xpath "/*/*[local-name()='groupId']/text()" $$module/$(POM_XML) 2>/dev/null) || \
+		g=$$(xmllint --xpath "/*/*[local-name()='parent']/*[local-name()='groupId']/text()" $$module/$(POM_XML)) && \
+		a=$$(xmllint --xpath "/*/*[local-name()='artifactId']/text()" $$module/$(POM_XML)) && \
 		dest="$(MVN_WORKSPACE)/$$(echo $$g |tr . /)/$$a/$$v" && \
 		if [[ ! -e "$$dest/$$a-$$v.pom" ]] || \
 		   [[ ! -e "$$dest/maven-metadata-local.xml" ]] || \
-		   [[ -n $$(find $$module/{pom.xml,src} -newer "$$dest/maven-metadata-local.xml" 2>/dev/null) ]] || \
+		   [[ -n $$(find $$module/{$(POM_XML),src} -newer "$$dest/maven-metadata-local.xml" 2>/dev/null) ]] || \
 		   [[ -n $$(find $$module -name '*.go' -newer "$$dest/maven-metadata-local.xml" 2>/dev/null) ]]; then \
 			touch $$module/.maven-to-{install,test}; \
 		fi \
@@ -205,18 +212,19 @@ $(addsuffix /.maven-dependencies-to-install,assembly $(MAVEN_MODULES)) : %/.mave
 $(addsuffix /.maven-snapshot-dependencies,assembly $(MAVEN_MODULES)) : %/.maven-snapshot-dependencies : %/.maven-effective-pom.xml $(POMS)
 	function print_modules_recursively() { \
 		local module=$$1 && \
-		submodules=($$(xmllint --format --xpath "/*/*[local-name()='modules']/*" $$module/pom.xml 2>/dev/null \
+		submodules=($$(xmllint --format --xpath "/*/*[local-name()='modules']/*" $$module/$(POM_XML) 2>/dev/null \
 		               | sed -e 's/<module>\([^<]*\)<\/module>/\1 /g')) && \
 		if [[ $${#submodules[*]} -gt 0 ]]; then \
 			for sub in $${submodules[*]}; do \
+				sub=$${sub%/$(POM_XML)} && \
 				print_modules_recursively $$module/$$sub; \
 			done \
 		else \
-			v=$$(xmllint --xpath "/*/*[local-name()='version']/text()" $$module/pom.xml) && \
+			v=$$(xmllint --xpath "/*/*[local-name()='version']/text()" $$module/$(POM_XML)) && \
 			if [[ "$$v" =~ -SNAPSHOT$$ ]]; then \
-				g=$$(xmllint --xpath "/*/*[local-name()='groupId']/text()" $$module/pom.xml 2>/dev/null) || \
-				g=$$(xmllint --xpath "/*/*[local-name()='parent']/*[local-name()='groupId']/text()" $$module/pom.xml) && \
-				a=$$(xmllint --xpath "/*/*[local-name()='artifactId']/text()" $$module/pom.xml) && \
+				g=$$(xmllint --xpath "/*/*[local-name()='groupId']/text()" $$module/$(POM_XML) 2>/dev/null) || \
+				g=$$(xmllint --xpath "/*/*[local-name()='parent']/*[local-name()='groupId']/text()" $$module/$(POM_XML)) && \
+				a=$$(xmllint --xpath "/*/*[local-name()='artifactId']/text()" $$module/$(POM_XML)) && \
 				if v_in_bom=$$(xmllint --xpath "//*[local-name()='dependency'][ \
 				                                    *[local-name()='groupId']='$$g' and \
 				                                    *[local-name()='artifactId']='$$a' \
@@ -282,7 +290,7 @@ $(addsuffix /.gradle-snapshot-dependencies,assembly $(MAVEN_MODULES)) : %/.gradl
 
 # The assembly defines which versions of which modules we have to include in the build.
 # This target should be called from a target that depends on $(MVN_WORKSPACE) first
-$(addsuffix /.maven-effective-pom.xml,assembly $(MAVEN_MODULES)) : %/.maven-effective-pom.xml : %/pom.xml $(POMS)
+$(addsuffix /.maven-effective-pom.xml,assembly $(MAVEN_MODULES)) : %/.maven-effective-pom.xml : %/$(POM_XML) $(POMS)
 	poms=($(POMS)) && \
 	for pom in $${poms[*]}; do \
 		v=$$(xmllint --xpath "/*/*[local-name()='version']/text()" $$pom) && \
@@ -296,6 +304,9 @@ $(addsuffix /.maven-effective-pom.xml,assembly $(MAVEN_MODULES)) : %/.maven-effe
 		fi \
 	done
 	cd $(dir $<) && $(MVN) --quiet help:effective-pom -Doutput=$(CURDIR)/$@
+
+.versionless-pom.xml $(addsuffix /.versionless-pom.xml,assembly $(MAVEN_MODULES)) : %.versionless-pom.xml : %pom.xml
+	xsltproc .make/remove-versions.xsl $< >$@
 
 $(addsuffix /.gradle-install-dependencies,assembly $(MAVEN_MODULES)) : .gradle-settings/conf/settings.xml
 $(addsuffix /.gradle-test-dependencies,assembly $(MAVEN_MODULES)) : .gradle-settings/conf/settings.xml
@@ -356,16 +367,17 @@ clean : cache
 	rm -f maven.log
 	rm -f *.zip *.deb *.rpm
 	rm -rf webui/dp2webui
-	find * -name .maven-to-install -exec rm -r "{}" \;
-	find * -name .maven-to-test -exec rm -r "{}" \;
-	find * -name .maven-to-test-dependents -exec rm -r "{}" \;
-	find * -name .maven-snapshot-dependencies -exec rm -r "{}" \;
-	find * -name .maven-effective-pom.xml -exec rm -r "{}" \;
-	find * -name .maven-dependencies-to-install -exec rm -r "{}" \;
-	find * -name .maven-dependencies-to-test -exec rm -r "{}" \;
-	find * -name .maven-dependencies-to-test-dependents -exec rm -r "{}" \;
-	find * -name .gradle-dependencies-to-install -exec rm -r "{}" \;
-	find * -name .gradle-dependencies-to-test -exec rm -r "{}" \;
+	find * -name .maven-to-install -exec rm "{}" \;
+	find * -name .maven-to-test -exec rm "{}" \;
+	find * -name .maven-to-test-dependents -exec rm "{}" \;
+	find * -name .maven-snapshot-dependencies -exec rm "{}" \;
+	find * -name .maven-effective-pom.xml -exec rm "{}" \;
+	find * -name .maven-dependencies-to-install -exec rm "{}" \;
+	find * -name .maven-dependencies-to-test -exec rm "{}" \;
+	find * -name .maven-dependencies-to-test-dependents -exec rm "{}" \;
+	find * -name .gradle-dependencies-to-install -exec rm "{}" \;
+	find * -name .gradle-dependencies-to-test -exec rm "{}" \;
+	find . -name .versionless-pom.xml -exec rm "{}" \;
 
 .PHONY : gradle-clean
 gradle-clean :
