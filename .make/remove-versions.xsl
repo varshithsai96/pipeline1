@@ -6,6 +6,8 @@
 	
 	<xsl:output method="xml" encoding="UTF-8"/>
 	
+	<xsl:param name="artifacts"/>
+	
 	<xsl:template match="@*|node()">
 		<xsl:copy>
 			<xsl:apply-templates select="@*|node()"/>
@@ -16,6 +18,7 @@
 	                     pom:parent/pom:version|
 	                     pom:dependency/pom:version|
 	                     pom:plugin/pom:version">
+		<xsl:variable name="artifactId" select="string(parent::*/pom:artifactId)"/>
 		<xsl:variable name="groupId">
 			<xsl:choose>
 				<xsl:when test="parent::*/pom:groupId">
@@ -32,7 +35,7 @@
 		</xsl:variable>
 		<xsl:copy>
 			<xsl:choose>
-				<xsl:when test="starts-with($groupId,'org.daisy.pipeline')">
+				<xsl:when test="contains(concat(',',$artifacts,','),concat(',',$groupId,':',$artifactId,','))">
 					<xsl:text>0.0.0-SNAPSHOT</xsl:text>
 				</xsl:when>
 				<xsl:otherwise>

@@ -4,7 +4,8 @@ else
 POM_XML := pom.xml
 endif
 
-POMS := $(patsubst %pom.xml,%$(POM_XML),$(shell find * -name pom.xml ! -path '*/target/*'))
+ORIG_POMS := $(shell find * -name pom.xml ! -path '*/target/*')
+POMS := $(patsubst %pom.xml,%$(POM_XML),$(ORIG_POMS))
 MAVEN_MODULES := $(patsubst %/$(POM_XML),%,$(filter-out $(POM_XML) assembly/$(POM_XML),$(POMS)))
 GRADLE_FILES := $(shell find * -name build.gradle -o -name settings.gradle -o -name gradle.properties)
 
@@ -305,8 +306,27 @@ $(addsuffix /.maven-effective-pom.xml,assembly $(MAVEN_MODULES)) : %/.maven-effe
 	done
 	cd $(dir $<) && $(MVN) --quiet help:effective-pom -Doutput=$(CURDIR)/$@
 
-.versionless-pom.xml $(addsuffix /.versionless-pom.xml,assembly $(MAVEN_MODULES)) : %.versionless-pom.xml : %pom.xml
-	xsltproc .make/remove-versions.xsl $< >$@
+.versionless-pom.xml $(addsuffix /.versionless-pom.xml,assembly $(MAVEN_MODULES)) : %.versionless-pom.xml : %pom.xml .maven-artifacts
+	xsltproc --stringparam artifacts $$(cat .maven-artifacts |paste -sd , -) .make/remove-versions.xsl $< >$@;
+
+.maven-artifacts : $(ORIG_POMS)
+	function print_modules_recursively() { \
+		local module=$$1 && \
+		submodules=($$(xmllint --format --xpath "/*/*[local-name()='modules']/*" $$module/pom.xml 2>/dev/null \
+		               | sed -e 's/<module>\([^<]*\)<\/module>/\1 /g')) && \
+		if [[ $${#submodules[*]} -gt 0 ]]; then \
+			for sub in $${submodules[*]}; do \
+				print_modules_recursively $$module/$$sub; \
+			done \
+		else \
+			pom=$$module/pom.xml && \
+			g=$$(xmllint --xpath "/*/*[local-name()='groupId']/text()" $$pom 2>/dev/null) || \
+			g=$$(xmllint --xpath "/*/*[local-name()='parent']/*[local-name()='groupId']/text()" $$pom) && \
+			a=$$(xmllint --xpath "/*/*[local-name()='artifactId']/text()" $$pom) && \
+			echo "$$g:$$a"; \
+		fi \
+	} && \
+	print_modules_recursively . >$@
 
 $(addsuffix /.gradle-install-dependencies,assembly $(MAVEN_MODULES)) : .gradle-settings/conf/settings.xml
 $(addsuffix /.gradle-test-dependencies,assembly $(MAVEN_MODULES)) : .gradle-settings/conf/settings.xml

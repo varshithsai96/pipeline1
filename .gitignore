@@ -16,6 +16,7 @@
 /*.zip
 /.gradle-settings/
 /.gradle/
+/.maven-artifacts
 /.maven-cache/
 /.maven-workspace/
 /maven.log
