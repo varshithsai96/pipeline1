@@ -1,4 +1,4 @@
-ifdef VERSIONLESS
+ifndef WITH_VERSIONS
 POM_XML := .versionless-pom.xml
 else
 POM_XML := pom.xml
