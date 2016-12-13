@@ -59,7 +59,7 @@
     <osgi.version>4.3.1</osgi.version>
     <powermock.version>1.5.4</powermock.version>
     <restlet.version>2.1-RC6</restlet.version>
-    <saxon-he.version>9.5.1-5</saxon-he.version>
+    <saxon-he.version>9.5.1.5</saxon-he.version>
     <slf4j.version>1.7.2</slf4j.version>
     <woodstox.core.version>4.1.2</woodstox.core.version>
     <woodstox.stax2-api.version>3.1.1</woodstox.stax2-api.version>
@@ -249,30 +249,9 @@
         <version>${javax.servlet-api.version}</version>
       </dependency>
       <dependency>
-        <groupId>net.sf.saxon</groupId>
-        <artifactId>Saxon-HE</artifactId>
-        <version>${saxon-he.version}</version>
-        <!-- TODO remove when the fix to issue 1501 is pushed to Maven Central
-             see http://dev.saxonica.com/community/issues/1501 -->
-        <exclusions>
-          <exclusion>
-            <groupId>org.jdom</groupId>
-            <artifactId>jdom</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>xom</groupId>
-            <artifactId>xom</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.daisy.libs</groupId>
         <artifactId>saxon-he</artifactId>
-        <version>9.5.1.5</version>
+        <version>${saxon-he.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>

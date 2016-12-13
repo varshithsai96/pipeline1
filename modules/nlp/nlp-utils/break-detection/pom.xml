@@ -25,10 +25,10 @@
      <scope>test</scope>
    </dependency>
 
-   <dependency>
-     <groupId>net.sf.saxon</groupId>
-     <artifactId>Saxon-HE</artifactId>
-   </dependency>
+    <dependency>
+      <groupId>org.daisy.libs</groupId>
+      <artifactId>saxon-he</artifactId>
+    </dependency>
 
    <!--  Possible future language detection: -->
    <!--  <dependency>

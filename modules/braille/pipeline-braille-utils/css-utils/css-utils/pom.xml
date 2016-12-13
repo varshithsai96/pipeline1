@@ -30,8 +30,8 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>net.sf.saxon</groupId>
-      <artifactId>Saxon-HE</artifactId>
+      <groupId>org.daisy.libs</groupId>
+      <artifactId>saxon-he</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -46,11 +46,6 @@
     <!--
         runtime dependencies
     -->
-    <dependency>
-      <groupId>org.daisy.libs</groupId>
-      <artifactId>saxon-he</artifactId>
-      <scope>runtime</scope>
-    </dependency>
     <!--
         optional (but keep mandatory as long as there is only one implementation)
     -->

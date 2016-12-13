@@ -27,9 +27,9 @@
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
     </dependency>
-     <dependency>
-      <groupId>net.sf.saxon</groupId>
-      <artifactId>Saxon-HE</artifactId>
+    <dependency>
+      <groupId>org.daisy.libs</groupId>
+      <artifactId>saxon-he</artifactId>
     </dependency>
     <dependency>
       <groupId>org.daisy.libs</groupId>
@@ -55,14 +55,6 @@
       <artifactId>powermock-api-mockito</artifactId>
       <scope>test</scope>
    </dependency>
-    <!--
-        OSGi runtime dependencies
-    -->
-    <dependency>
-      <groupId>org.daisy.libs</groupId>
-      <artifactId>saxon-he</artifactId>
-      <scope>runtime</scope>
-    </dependency>
   </dependencies>
 
   <build>
