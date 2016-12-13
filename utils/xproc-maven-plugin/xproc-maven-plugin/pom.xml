@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.daisy.maven</groupId>
       <artifactId>xprocspec-runner</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -60,9 +60,49 @@
       <artifactId>logback-classic</artifactId>
       <version>1.0.11</version>
     </dependency>
+    <dependency>
+      <groupId>org.daisy.maven</groupId>
+      <artifactId>xproc-engine-calabash</artifactId>
+      <version>1.0.1-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.servicemix.tooling</groupId>
+        <artifactId>depends-maven-plugin</artifactId>
+        <version>1.3.1</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>generate-depends-file</goal>
+            </goals>
+            <configuration>
+              <outputFile>${project.build.directory}/classes/META-INF/maven/dependencies.properties</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.build.directory}/classes/META-INF/maven/dependencies.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-invoker-plugin</artifactId>
         <version>1.8</version>
@@ -73,8 +113,18 @@
           <postBuildHookScript>verify</postBuildHookScript>
           <properties>
             <xproc-maven-plugin.version>${project.version}</xproc-maven-plugin.version>
-            <xproc-engine-calabash.version>1.0.1-SNAPSHOT</xproc-engine-calabash.version>
+            <xproc-engine-calabash.version>${org.daisy.maven/xproc-engine-calabash/version}</xproc-engine-calabash.version>
           </properties>
+          <!--
+              We have to configure logging with slf4j-simple because it is chosen over
+              logback-classic. We can't remove slf4j-simple from the classpath because it is a
+              dependency of Maven itself. The solution is probably to run the tests in a forked
+              process, like the surefire-plugin does also.
+          -->
+          <mavenOpts>
+            -Dorg.slf4j.simpleLogger.log.com.xmlcalabash=debug
+            -Dorg.slf4j.simpleLogger.log.org.daisy.xprocspec=debug
+          </mavenOpts>
           <goals>
             <goal>surefire-report:report</goal>
           </goals>
