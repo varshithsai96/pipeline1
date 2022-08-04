@@ -104,6 +104,7 @@ public class JobsResource extends AuthenticatedResource {
                 DomRepresentation dom = new DomRepresentation(MediaType.APPLICATION_XML, doc);
                 setStatus(Status.SUCCESS_OK);
                 logResponse(dom);
+                enableCORS("*");
                 return dom;
         }
 

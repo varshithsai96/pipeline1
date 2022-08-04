@@ -90,4 +90,16 @@ public abstract class GenericResource extends ServerResource {
 		}
 		headers.add(new Header("Warning", "" + code + " - " + description));
 	}
+
+	protected void enableCORS(String domain) {
+
+		//getResponse().getAccessControlAllowHeaders().add(domain); // restlet 2.4
+
+		Series<Header> headers = (Series<Header>)getResponse().getAttributes().get(HeaderConstants.ATTRIBUTE_HEADERS);
+		if (headers == null) {
+			headers = new Series<>(Header.class);
+			getResponse().getAttributes().put(HeaderConstants.ATTRIBUTE_HEADERS, headers);
+		}
+		headers.add(new Header("Access-Control-Allow-Origin", domain));
+	}
 }
